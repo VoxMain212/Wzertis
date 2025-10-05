@@ -1,31 +1,54 @@
 <template>
-  <header>
+  <header :class="{ 'header-scrolled': isScrolled, 'mobile-open': isMobileMenuOpen }">
     <div class="header-container">
-      <div class="logo">WZERTIS</div>
+      <a href="#home" class="logo" @click="closeMobileMenu">WZERTIS</a>
       <nav v-if="!isMobile">
         <ul>
-          <li><a href="#home">Главная</a></li>
-          <li><a href="#gallery">Галерея</a></li>
-          <li><a href="#about">Обо мне</a></li>
-          <li><a href="#contact">Контакты</a></li>
+          <li v-for="item in menuItems" :key="item.href">
+            <a
+              :href="item.href"
+              :class="{ active: activeSection === item.id }"
+              @click="closeMobileMenu"
+            >
+              {{ item.label }}
+            </a>
+          </li>
         </ul>
       </nav>
-      <button class="mobile-menu-btn" @click="toggleMobileMenu" v-if="isMobile">☰</button>
+      <button class="mobile-menu-btn" @click="toggleMobileMenu" v-if="isMobile" aria-label="Меню">
+        <span class="hamburger"></span>
+      </button>
     </div>
-    <div class="mobile-menu" v-show="isMobileMenuOpen && isMobile">
-      <a href="#home" @click="closeMobileMenu">Главная</a>
-      <a href="#gallery" @click="closeMobileMenu">Галерея</a>
-      <a href="#about" @click="closeMobileMenu">Обо мне</a>
-      <a href="#contact" @click="closeMobileMenu">Контакты</a>
-    </div>
+    <transition name="slide-down">
+      <div class="mobile-menu" v-show="isMobileMenuOpen && isMobile">
+        <a
+          v-for="item in menuItems"
+          :key="item.href"
+          :href="item.href"
+          @click="closeMobileMenu"
+          :class="{ active: activeSection === item.id }"
+        >
+          {{ item.label }}
+        </a>
+      </div>
+    </transition>
   </header>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, onBeforeUnmount } from 'vue';
 
 const isMobileMenuOpen = ref(false);
 const isMobile = ref(window.innerWidth <= 768);
+const isScrolled = ref(false);
+const activeSection = ref('home');
+
+const menuItems = [
+  { id: 'home', href: '#home', label: 'Главная' },
+  { id: 'gallery', href: '#gallery', label: 'Галерея' },
+  { id: 'about', href: '#about', label: 'Обо мне' },
+  { id: 'contact', href: '#contact', label: 'Контакты' }
+];
 
 const toggleMobileMenu = () => isMobileMenuOpen.value = !isMobileMenuOpen.value;
 const closeMobileMenu = () => isMobileMenuOpen.value = false;
@@ -35,21 +58,62 @@ const handleResize = () => {
   if (!isMobile.value) isMobileMenuOpen.value = false;
 };
 
-onMounted(() => window.addEventListener('resize', handleResize));
-onUnmounted(() => window.removeEventListener('resize', handleResize));
+const handleScroll = () => {
+  // Эффект тени при скролле
+  isScrolled.value = window.scrollY > 20;
+
+  // Определение активной секции
+  const sections = ['home', 'gallery', 'about', 'contact'];
+  const scrollPos = window.scrollY + 100;
+
+  for (const section of sections) {
+    const el = document.getElementById(section);
+    if (el) {
+      const top = el.offsetTop;
+      const height = el.offsetHeight;
+      if (scrollPos >= top && scrollPos < top + height) {
+        activeSection.value = section;
+        break;
+      }
+    }
+  }
+};
+
+onMounted(() => {
+  window.addEventListener('resize', handleResize);
+  window.addEventListener('scroll', handleScroll);
+  handleScroll(); // инициализация
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', handleResize);
+  window.removeEventListener('scroll', handleScroll);
+});
 </script>
 
 <style scoped>
-/* Скопировать стили header из оригинала */
 header {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  z-index: 50;
+  z-index: 1000;
+  background-color: rgba(10, 10, 10, 0.85);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid transparent;
+  padding: 1rem 0;
+  transition: all 0.4s ease;
+}
+
+header.header-scrolled {
   background-color: var(--primary-color);
   border-bottom: 1px solid var(--gray-800);
-  padding: 1rem 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+header.mobile-open {
+  background-color: var(--primary-color);
+  border-bottom: 1px solid var(--gray-800);
 }
 
 .header-container {
@@ -59,12 +123,23 @@ header {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
+  position: relative;
 }
 
 .logo {
-  font-size: 1.5rem;
-  font-weight: bold;
-  letter-spacing: 1px;
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  text-decoration: none;
+  background: linear-gradient(to right, #ffffff, #a0a0ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  transition: transform 0.3s ease;
+}
+
+.logo:hover {
+  transform: scale(1.05);
 }
 
 nav ul {
@@ -79,41 +154,128 @@ nav li {
 nav a {
   color: var(--text-color);
   text-decoration: none;
+  font-weight: 500;
+  position: relative;
+  padding: 0.4rem 0;
   transition: color 0.3s ease;
 }
 
-nav a:hover {
+nav a::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--accent-color);
+  transition: width 0.3s ease;
+}
+
+nav a:hover,
+nav a.active {
   color: var(--accent-color);
 }
 
+nav a:hover::after,
+nav a.active::after {
+  width: 100%;
+}
+
+/* Мобильное меню */
 .mobile-menu-btn {
   display: none;
+  background: none;
+  border: none;
   cursor: pointer;
+  padding: 0.5rem;
+  z-index: 1001;
+}
+
+.hamburger {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background: var(--text-color);
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.hamburger::before,
+.hamburger::after {
+  content: '';
+  position: absolute;
+  width: 24px;
+  height: 2px;
+  background: var(--text-color);
+  transition: all 0.3s ease;
+}
+
+.hamburger::before {
+  top: -6px;
+}
+
+.hamburger::after {
+  bottom: -6px;
 }
 
 .mobile-menu {
-  display: none;
   background-color: var(--primary-color);
   border-top: 1px solid var(--gray-800);
-  padding: 1rem 0;
+  padding: 1.2rem 0;
+  overflow: hidden;
 }
 
 .mobile-menu a {
   display: block;
   color: var(--text-color);
   text-decoration: none;
-  padding: 0.5rem 1rem;
-  transition: color 0.3s ease;
+  padding: 0.8rem 1.5rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  position: relative;
 }
 
-.mobile-menu a:hover {
+.mobile-menu a::after {
+  content: '';
+  position: absolute;
+  left: 1.5rem;
+  bottom: 0;
+  width: 0;
+  height: 1px;
+  background: var(--gray-600);
+  transition: width 0.3s ease;
+}
+
+.mobile-menu a:hover,
+.mobile-menu a.active {
   color: var(--accent-color);
+  padding-left: 1.8rem;
 }
 
+.mobile-menu a:hover::after,
+.mobile-menu a.active::after {
+  width: 30px;
+}
+
+/* Анимации */
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.slide-down-enter-from,
+.slide-down-leave-to {
+  opacity: 0;
+  transform: translateY(-20px);
+}
+
+/* Адаптив */
 @media (max-width: 768px) {
   .header-container {
-    flex-direction: column;
-    gap: 1rem;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0;
   }
 
   nav ul {
@@ -121,10 +283,6 @@ nav a:hover {
   }
 
   .mobile-menu-btn {
-    display: block;
-  }
-
-  .mobile-menu {
     display: block;
   }
 }

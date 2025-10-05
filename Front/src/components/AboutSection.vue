@@ -1,19 +1,102 @@
+<script>
+export default {
+  data() {
+    return {
+      authorInfo: {}
+    };
+  },
+  async beforeMount() {
+    await this.get_author_profile();
+  },
+  computed: {
+    // Проверка наличия хотя бы одной соцсети
+    hasSocials() {
+      return (
+        this.authorInfo.ig ||
+        this.authorInfo.vk ||
+        this.authorInfo.tg
+      );
+    },
+    // Если нужно — можно разбить bio по переносам строк
+    splitBio() {
+      if (!this.authorInfo.bio) return [];
+      return this.authorInfo.bio.split('\n\n').filter(p => p.trim().length > 0);
+    }
+  },
+  methods: {
+    async get_author_profile() {
+      try {
+        const response = await fetch('http://127.0.0.1:8000/author/profile/', {
+          method: 'GET'
+        });
+        if (response.ok) {
+          this.authorInfo = await response.json();
+        }
+      } catch (error) {
+        console.error('Ошибка загрузки профиля:', error);
+      }
+    }
+  }
+};
+</script>
+
 <template>
   <section id="about" class="about-section">
     <div class="container">
       <h2 class="section-title">Обо мне</h2>
       <div class="about-content">
-        <div class="about-image">
-          <img src="https://placehold.co/400x500/1e1e1e/ffffff?text=Портрет+художника" alt="Портрет художника" />
+        <div class="about-image-wrapper">
+          <img
+            :src="'http://127.0.0.1:8000' + authorInfo.photo"
+            alt="Портрет художника"
+            class="about-image"
+            loading="lazy"
+          />
+          <div class="image-glow"></div>
         </div>
         <div class="about-text">
-          <p>Я визуальный художник, специализирующийся на слиянии каллиграфии, иллюстрации и космических образов...</p>
-          <p>Мой путь начался с традиционных техник письма...</p>
-          <p>Когда я не создаю искусство, я изучаю древние письмена...</p>
-          <div class="social-links">
-            <a href="#" class="social-link">IG</a>
-            <a href="#" class="social-link">TW</a>
-            <a href="#" class="social-link">FB</a>
+          <!-- Простой текст — если нет разбивки -->
+          <div v-if="authorInfo.bio" class="bio-content">
+            {{ authorInfo.bio }}
+          </div>
+          <div v-else class="bio-placeholder">Информация о художнике скоро появится...</div>
+
+          <div class="signature" v-if="authorInfo.name">
+            — {{ authorInfo.name }}
+          </div>
+
+          <!-- Соцсети — только если есть хотя бы одна -->
+          <div class="social-links" v-if="hasSocials">
+            <a
+              v-if="authorInfo.ig"
+              :href="authorInfo.ig"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="social-link"
+              aria-label="Instagram"
+            >
+              <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>Instagram</title><path d="M7.0301.084c-1.2768.0602-2.1487.264-2.911.5634-.7888.3075-1.4575.72-2.1228 1.3877-.6652.6677-1.075 1.3368-1.3802 2.127-.2954.7638-.4956 1.6365-.552 2.914-.0564 1.2775-.0689 1.6882-.0626 4.947.0062 3.2586.0206 3.6671.0825 4.9473.061 1.2765.264 2.1482.5635 2.9107.308.7889.72 1.4573 1.388 2.1228.6679.6655 1.3365 1.0743 2.1285 1.38.7632.295 1.6361.4961 2.9134.552 1.2773.056 1.6884.069 4.9462.0627 3.2578-.0062 3.668-.0207 4.9478-.0814 1.28-.0607 2.147-.2652 2.9098-.5633.7889-.3086 1.4578-.72 2.1228-1.3881.665-.6682 1.0745-1.3378 1.3795-2.1284.2957-.7632.4966-1.636.552-2.9124.056-1.2809.0692-1.6898.063-4.948-.0063-3.2583-.021-3.6668-.0817-4.9465-.0607-1.2797-.264-2.1487-.5633-2.9117-.3084-.7889-.72-1.4568-1.3876-2.1228C21.2982 1.33 20.628.9208 19.8378.6165 19.074.321 18.2017.1197 16.9244.0645 15.6471.0093 15.236-.005 11.977.0014 8.718.0076 8.31.0215 7.0301.0839m.1402 21.6932c-1.17-.0509-1.8053-.2453-2.2287-.408-.5606-.216-.96-.4771-1.3819-.895-.422-.4178-.6811-.8186-.9-1.378-.1644-.4234-.3624-1.058-.4171-2.228-.0595-1.2645-.072-1.6442-.079-4.848-.007-3.2037.0053-3.583.0607-4.848.05-1.169.2456-1.805.408-2.2282.216-.5613.4762-.96.895-1.3816.4188-.4217.8184-.6814 1.3783-.9003.423-.1651 1.0575-.3614 2.227-.4171 1.2655-.06 1.6447-.072 4.848-.079 3.2033-.007 3.5835.005 4.8495.0608 1.169.0508 1.8053.2445 2.228.408.5608.216.96.4754 1.3816.895.4217.4194.6816.8176.9005 1.3787.1653.4217.3617 1.056.4169 2.2263.0602 1.2655.0739 1.645.0796 4.848.0058 3.203-.0055 3.5834-.061 4.848-.051 1.17-.245 1.8055-.408 2.2294-.216.5604-.4763.96-.8954 1.3814-.419.4215-.8181.6811-1.3783.9-.4224.1649-1.0577.3617-2.2262.4174-1.2656.0595-1.6448.072-4.8493.079-3.2045.007-3.5825-.006-4.848-.0608M16.953 5.5864A1.44 1.44 0 1 0 18.39 4.144a1.44 1.44 0 0 0-1.437 1.4424M5.8385 12.012c.0067 3.4032 2.7706 6.1557 6.173 6.1493 3.4026-.0065 6.157-2.7701 6.1506-6.1733-.0065-3.4032-2.771-6.1565-6.174-6.1498-3.403.0067-6.156 2.771-6.1496 6.1738M8 12.0077a4 4 0 1 1 4.008 3.9921A3.9996 3.9996 0 0 1 8 12.0077"/></svg>
+            </a>
+            <a
+              v-if="authorInfo.vk"
+              :href="authorInfo.vk"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="social-link"
+              aria-label="VK"
+            >
+              <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>VK</title><path d="m9.489.004.729-.003h3.564l.73.003.914.01.433.007.418.011.403.014.388.016.374.021.36.025.345.03.333.033c1.74.196 2.933.616 3.833 1.516.9.9 1.32 2.092 1.516 3.833l.034.333.029.346.025.36.02.373.025.588.012.41.013.644.009.915.004.98-.001 3.313-.003.73-.01.914-.007.433-.011.418-.014.403-.016.388-.021.374-.025.36-.03.345-.033.333c-.196 1.74-.616 2.933-1.516 3.833-.9.9-2.092 1.32-3.833 1.516l-.333.034-.346.029-.36.025-.373.02-.588.025-.41.012-.644.013-.915.009-.98.004-3.313-.001-.73-.003-.914-.01-.433-.007-.418-.011-.403-.014-.388-.016-.374-.021-.36-.025-.345-.03-.333-.033c-1.74-.196-2.933-.616-3.833-1.516-.9-.9-1.32-2.092-1.516-3.833l-.034-.333-.029-.346-.025-.36-.02-.373-.025-.588-.012-.41-.013-.644-.009-.915-.004-.98.001-3.313.003-.73.01-.914.007-.433.011-.418.014-.403.016-.388.021-.374.025-.36.03-.345.033-.333c.196-1.74.616-2.933 1.516-3.833.9-.9 2.092-1.32 3.833-1.516l.333-.034.346-.029.36-.025.373-.02.588-.025.41-.012.644-.013.915-.009ZM6.79 7.3H4.05c.13 6.24 3.25 9.99 8.72 9.99h.31v-3.57c2.01.2 3.53 1.67 4.14 3.57h2.84c-.78-2.84-2.83-4.41-4.11-5.01 1.28-.74 3.08-2.54 3.51-4.98h-2.58c-.56 1.98-2.22 3.78-3.8 3.95V7.3H10.5v6.92c-1.6-.4-3.62-2.34-3.71-6.92Z"/></svg>
+            </a>
+            <a
+              v-if="authorInfo.tg"
+              :href="authorInfo.tg"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="social-link"
+              aria-label="Telegram"
+            >
+              <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>Telegram</title><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+            </a>
           </div>
         </div>
       </div>
@@ -22,68 +105,187 @@
 </template>
 
 <style scoped>
-/* Скопировать стили about-section */
 .about-section {
-  padding: 60px 20px;
-  background-color: var(--gray-900);
+  padding: 100px 20px;
+  background: linear-gradient(180deg, var(--gray-900) 0%, #0c0c16 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.about-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 10% 20%, rgba(30, 124, 255, 0.05) 0%, transparent 40%),
+              radial-gradient(circle at 90% 80%, rgba(102, 51, 255, 0.05) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.container {
+  position: relative;
+  z-index: 2;
+}
+
+.section-title {
+  text-align: center;
+  font-size: 2.6rem;
+  margin-bottom: 3rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .about-content {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 2.5rem;
+  align-items: center;
 }
 
 @media (min-width: 768px) {
   .about-content {
     flex-direction: row;
     align-items: center;
+    gap: 3rem;
   }
+}
+
+/* Обёртка для фото */
+.about-image-wrapper {
+  position: relative;
+  flex: 0 0 320px;
+  display: flex;
+  justify-content: center;
 }
 
 .about-image {
-  flex: 0 0 300px;
-}
-
-.about-image img {
   width: 100%;
+  max-width: 320px;
   height: auto;
-  border-radius: 8px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  border-radius: 16px;
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.5),
+    0 0 0 2px rgba(255, 255, 255, 0.05);
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+  display: block;
 }
 
+.about-image-wrapper:hover .about-image {
+  transform: scale(1.03);
+  box-shadow:
+    0 15px 40px rgba(0, 0, 0, 0.6),
+    0 0 0 2px rgba(30, 124, 255, 0.2);
+}
+
+.image-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+  background: radial-gradient(circle, rgba(30, 124, 255, 0.2) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.about-image-wrapper:hover .image-glow {
+  opacity: 1;
+}
+
+/* Текст */
 .about-text {
   flex: 1;
+  max-width: 700px;
 }
 
-.about-text p {
-  margin-bottom: 1rem;
+.bio-content {
+  font-size: 1.15rem;
+  line-height: 1.7;
+  color: #e0e0ff;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  white-space: pre-line; /* сохраняет переносы строк из текста */
 }
 
+.bio-placeholder {
+  color: var(--gray-400);
+  font-style: italic;
+}
+
+.signature {
+  font-style: italic;
+  color: var(--accent-color);
+  margin-top: 1.5rem;
+  font-size: 1.2rem;
+  text-align: right;
+}
+
+/* Соцсети */
 .social-links {
   display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
+  gap: 1.2rem;
+  margin-top: 2rem;
+  justify-content: flex-start;
 }
 
 .social-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
   color: var(--accent-color);
+  background: rgba(30, 124, 255, 0.1);
+  transition: all 0.3s ease;
   text-decoration: none;
-  font-size: 1.5rem;
-  transition: color 0.3s ease;
 }
 
 .social-link:hover {
-  color: #1a6cd4;
+  background: var(--accent-color);
+  color: var(--primary-color);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 15px rgba(30, 124, 255, 0.4);
 }
 
+/* Адаптив */
 @media (max-width: 768px) {
+  .section-title {
+    font-size: 2.2rem;
+    margin-bottom: 2.5rem;
+  }
+
   .about-content {
-    flex-direction: column;
+    text-align: center;
+  }
+
+  .social-links {
+    justify-content: center;
+  }
+
+  .signature {
+    text-align: center;
   }
 
   .about-image {
-    flex: 0 0 100%;
+    max-width: 280px;
+  }
+}
+
+@media (max-width: 480px) {
+  .bio-content {
+    font-size: 1.05rem;
+  }
+
+  .about-image {
+    max-width: 240px;
   }
 }
 </style>

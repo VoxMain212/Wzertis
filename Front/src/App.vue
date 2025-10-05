@@ -1,21 +1,30 @@
 <template>
-  <Header />
-  <HeroSection />
-  <FeaturedCarousel :featured-works="featuredWorks" />
-  <GallerySection :artworks="artworks" :categories="categories" />
-  <AboutSection />
-  <ContactSection @form-submitted="handleFormSubmit" />
-  <Footer />
-  <ArtworkModal 
-    :is-open="isModalOpen" 
-    :artwork="selectedArtwork" 
-    :categories="categories"
-    @close="closeModal" 
-  />
+  <div id="app">
+    <Header />
+    <HeroSection />
+    <FeaturedCarousel 
+      :featured-works="featuredWorks" 
+      @open-modal="openArtworkModal" 
+    />
+    <GallerySection 
+      :artworks="artworks" 
+      :categories="categories" 
+      @open-modal="openArtworkModal" 
+    />
+    <AboutSection />
+    <ContactSection @form-submitted="handleFormSubmit" />
+    <Footer />
+    
+    <ArtworkModal 
+      :is-open="isModalOpen" 
+      :artwork="selectedArtwork" 
+      :categories="categories"
+      @close="closeModal" 
+    />
+  </div>
 </template>
 
-<script setup>
-import { ref } from 'vue';
+<script>
 import Header from './components/Header.vue';
 import HeroSection from './components/HeroSection.vue';
 import FeaturedCarousel from './components/FeaturedCarousel.vue';
@@ -25,116 +34,65 @@ import ContactSection from './components/ContactSection.vue';
 import Footer from './components/Footer.vue';
 import ArtworkModal from './components/ArtworkModal.vue';
 
-// Данные
-const featuredWorks = ref([
-  {
-    title: "Космическая каллиграфия",
-    image: "https://placehold.co/1200x800/0a0a0a/ffffff?text=Космическая+каллиграфия",
-    description: "Слияние космических элементов и сложных буквенных форм."
+export default {
+  name: 'App',
+  components: {
+    Header,
+    HeroSection,
+    FeaturedCarousel,
+    GallerySection,
+    AboutSection,
+    ContactSection,
+    Footer,
+    ArtworkModal
   },
-  {
-    title: "Синие мечты",
-    image: "https://placehold.co/1200x800/1e3c5f/ffffff?text=Синие+мечты",
-    description: "Сюрреалистическая композиция, сочетающая аниме-эстетику с каллиграфическими элементами."
+  data() {
+    return {
+      isModalOpen: false,
+      selectedArtwork: null,
+      featuredWorks: [],
+      artworks: [],
+      categories: []
+    };
   },
-  {
-    title: "Синий змей",
-    image: "https://placehold.co/1200x800/0a0a0a/1e7cff?text=Синий+змей",
-    description: "Мистическое существо, возникающее из космических узоров."
+  async created() {
+    // Загружаем все данные при старте
+    await this.loadAllData();
+  },
+  methods: {
+    async loadAllData() {
+      try {
+        const categoriesRes = await fetch('http://127.0.0.1:8000/groups/');
+        this.categories = await categoriesRes.json();
+        console.log('Категории:', this.categories); // ← добавьте это
+
+        const artworksRes = await fetch('http://127.0.0.1:8000/artworks/');
+        this.artworks = await artworksRes.json();
+        console.log('Работы:', this.artworks);
+
+        const featuredRes = await fetch('http://127.0.0.1:8000/fav_works/');
+        this.featuredWorks = await featuredRes.json();
+        console.log('Избранные:', this.featuredWorks);
+      } catch (err) {
+        console.error('Ошибка загрузки данных:', err);
+      }
+    },
+    openArtworkModal(artwork) {
+      this.selectedArtwork = artwork;
+      this.isModalOpen = true;
+    },
+    closeModal() {
+      this.isModalOpen = false;
+      this.selectedArtwork = null;
+    },
+    handleFormSubmit() {
+      alert('Сообщение отправлено! Спасибо за ваше обращение.');
+    }
   }
-]);
-
-const artworks = ref([
-  {
-    id: 1,
-    title: "Космическая каллиграфия",
-    description: "Слияние космических элементов и сложных буквенных форм.",
-    image: "https://placehold.co/800x600/0a0a0a/ffffff?text=Космическая+каллиграфия",
-    category: "calligraphy",
-    date: "2023",
-    technique: "Акрил на холсте"
-  },
-  {
-    id: 2,
-    title: "Исследование готического алфавита",
-    description: "Исследование темной элегантности готических буквенных форм.",
-    image: "https://placehold.co/800x600/1e1e1e/ffffff?text=Готический+алфавит",
-    category: "calligraphy",
-    date: "2023",
-    technique: "Чернила на бумаге"
-  },
-  {
-    id: 3,
-    title: "Синие мечты",
-    description: "Сюрреалистическая композиция, сочетающая аниме-эстетику с каллиграфическими элементами.",
-    image: "https://placehold.co/800x600/1e3c5f/ffffff?text=Синие+мечты",
-    category: "illustration",
-    date: "2023",
-    technique: "Цифровая иллюстрация"
-  },
-  {
-    id: 4,
-    title: "Темная элегантность",
-    description: "Монохромное исследование в черно-белых тонах с драматическими контрастами.",
-    image: "https://placehold.co/800x600/0d0d0d/ffffff?text=Темная+элегантность",
-    category: "illustration",
-    date: "2023",
-    technique: "Перо и чернила"
-  },
-  {
-    id: 5,
-    title: "Синий змей",
-    description: "Мистическое существо, возникающее из космических узоров.",
-    image: "https://placehold.co/800x600/0a0a0a/1e7cff?text=Синий+змей",
-    category: "illustration",
-    date: "2023",
-    technique: "Смешанная техника"
-  },
-  {
-    id: 6,
-    title: "Абстрактные буквенные формы",
-    description: "Деконструкция традиционного письма в абстрактные композиции.",
-    image: "https://placehold.co/800x600/1a1a1a/ffffff?text=Абстрактные+формы",
-    category: "calligraphy",
-    date: "2023",
-    technique: "Маркер на картоне"
-  }
-]);
-
-const categories = ref([
-  { id: 'all', name: 'Все работы' },
-  { id: 'calligraphy', name: 'Каллиграфия' },
-  { id: 'illustration', name: 'Иллюстрация' }
-]);
-
-// Модальное окно
-const isModalOpen = ref(false);
-const selectedArtwork = ref(null);
-
-const openArtworkModal = (artwork) => {
-  selectedArtwork.value = artwork;
-  isModalOpen.value = true;
 };
-
-const closeModal = () => {
-  isModalOpen.value = false;
-  selectedArtwork.value = null;
-};
-
-// Эмиттеры
-const handleFormSubmit = () => {
-  alert('Сообщение отправлено! Спасибо за ваше обращение.');
-};
-
-// Экспортируем методы для дочерних компонентов
-defineExpose({
-  openArtworkModal,
-  closeModal
-});
 </script>
 
 <style>
-/* Здесь оставляем только глобальные стили из :root и * */
 :root {
   --primary-color: #0a0a0a;
   --secondary-color: #1e3c5f;
@@ -166,7 +124,6 @@ body {
   padding: 0 20px;
 }
 
-/* Анимации */
 @keyframes blob {
   0% { transform: translate(0px, 0px) scale(1); }
   33% { transform: translate(30px, -70px) scale(1.1); }

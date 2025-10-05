@@ -532,7 +532,6 @@ footer {
 
 /* Стили модального окна */
 .modal {
-  display: none;
   position: fixed;
   top: 0;
   left: 0;
