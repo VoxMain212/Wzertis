@@ -23,9 +23,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-qa91%gusuj8w-3$ni8hm%=s9bz&v%_oll+l3#+e34@u)6u_0e*'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'wzertis.onrender.com',
+    '*'
+]
 
 
 # Application definition
@@ -46,6 +49,10 @@ INSTALLED_APPS = [
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # Vite/Vue по умолчанию
     "http://127.0.0.1:5173",  # иногда используется
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://wzertis.onrender.com',  # замени на реальный URL
 ]
 
 # ИЛИ (менее безопасно, только для разработки!)
@@ -72,6 +79,7 @@ SPECTACULAR_SETTINGS = {
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware", 
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -145,7 +153,14 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+# STATIC_URL = '/static/'
+# STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',  # Папка для ваших статических файлов
+]
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 import os
 
@@ -156,3 +171,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+if not DEBUG:
+    MIDDLEWARE += ['whitenoise.middleware.WhiteNoiseMiddleware']
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'

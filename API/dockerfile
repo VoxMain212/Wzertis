@@ -1,18 +1,28 @@
-# Используем официальный образ Python
+# Используем официальный образ Python 3.11 (можно заменить на 3.12)
 FROM python:3.11-slim
 
-# Устанавливаем рабочую директорию
+# Устанавливаем переменные окружения
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# Создаём рабочую директорию
 WORKDIR /app
 
-# Копируем requirements.txt и устанавливаем зависимости
+# Копируем зависимости и устанавливаем их
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Копируем весь код Django (кроме виртуального окружения)
+# Копируем весь проект (кроме .git и ненужных файлов)
 COPY . .
 
-# Устанавливаем переменные окружения (можно переопределить в docker-compose)
-ENV PYTHONUNBUFFERED=1
+# Собираем статические файлы (если используешь collectstatic)
+# Это нужно, если в settings.py STATIC_ROOT != STATICFILES_DIRS[0]
+RUN python manage.py collectstatic --noinput
 
-# Запускаем сервер разработки Django
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Создаём миграции (если нужно)
+RUN python manage.py makemigrations --noinput
+RUN python manage.py migrate --noinput
+
+# Запускаем сервер (для разработки или тестирования)
+# CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "API.wsgi:application"]
